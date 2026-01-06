@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Immersive Air Canvas</title>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            background-color: #000;
+        }
+
+        #container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Video mirrored and covering full screen */
+        #webcam {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            z-index: 1;
+        }
+
+        /* Drawing canvas mirrored to match video exactly */
+        #canvas {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            transform: scaleX(-1);
+            pointer-events: none;
+        }
+
+        /* UI overlay (skeleton) */
+        #ui-overlay {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            display: flex;
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(25px);
+            padding: 12px 24px;
+            border-radius: 100px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            pointer-events: auto;
+            max-width: 95vw;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+        }
+
+        .tool {
+            width: 36px;
+            height: 36px;
+            min-width: 36px;
+            border-radius: 50%;
+            cursor: pointer;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+            border: 2px solid transparent;
+        }
+
+        .tool.active {
+            transform: scale(1.25);
+            border-color: #fff;
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.6);
+        }
+
+        .progress-ring {
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            width: 44px;
+            height: 44px;
+            pointer-events: none;
+            transform: rotate(-90deg);
+        }
+
+        .progress-ring circle {
+            fill: none;
+            stroke: #3b82f6;
+            stroke-width: 3;
+            stroke-dasharray: 125.6; /* 2 * PI * 20 */
+            stroke-dashoffset: 125.6;
+            transition: stroke-dashoffset 0.05s linear;
+        }
+
+        .status-pill {
+            position: absolute;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 100;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            color: white;
+            padding: 8px 24px;
+            border-radius: 50px;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            text-align: center;
+            font-weight: 500;
+        }
+
+        .loader {
+            position: fixed;
+            inset: 0;
+            z-index: 1000;
+            background: #000;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+        }
+
+        .divider {
+            width: 1px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.2);
+            margin: 0 8px;
+            align-self: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="loader" class="loader">
+        <div class="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin mb-4"></div>
+        <p class="tracking-widest uppercase text-[10px] font-bold">Initializing Colors...</p>
+    </div>
+
+    <div id="container">
+        <video id="webcam" autoplay playsinline></video>
+        <canvas id="canvas"></canvas>
+        <canvas id="ui-overlay"></canvas>
+
+        <div class="glass-panel" id="toolbar">
+            <!-- Professional Palette -->
+            <div class="tool active" data-type="color" data-value="#FF3B30" style="background-color: #FF3B30;" title="Red">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#FF9500" style="background-color: #FF9500;" title="Orange">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#FFCC00" style="background-color: #FFCC00;" title="Yellow">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#4CD964" style="background-color: #4CD964;" title="Green">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#5AC8FA" style="background-color: #5AC8FA;" title="Cyan">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#007AFF" style="background-color: #007AFF;" title="Blue">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#5856D6" style="background-color: #5856D6;" title="Indigo">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#AF52DE" style="background-color: #AF52DE;" title="Purple">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+            <div class="tool" data-type="color" data-value="#FFFFFF" style="background-color: #FFFFFF;" title="White">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+            </div>
+
+            <div class="divider"></div>
+
+            <!-- Utility Tools -->
+            <div class="tool bg-white/20" data-type="eraser" title="Eraser">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><path d="m7 21-4.3-4.3c-1-1-1-2.5 0-3.4l9.9-9.9c1-1 2.5-1 3.4 0l4.4 4.4c1 1 1 2.5 0 3.4L10.5 21z"></path><path d="m22 21-10-10"></path></svg>
+            </div>
+            <div class="tool bg-blue-500/30" data-type="sensor" title="Toggle Sensors">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M12 8v8M8 12h8"/></svg>
+            </div>
+            <div class="tool bg-red-600/90 text-white font-bold text-[7px]" data-type="clear" title="Clear All">
+                <svg class="progress-ring"><circle cx="22" cy="22" r="20"></circle></svg>
+                CLEAR
+            </div>
+        </div>
+
+        <div class="status-pill" id="status-text">
+            Extended Palette Ready • Hover to Select • Point Index to Draw
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const uiCanvas = document.getElementById('ui-overlay');
+        const ctx = canvas.getContext('2d');
+        const uiCtx = uiCanvas.getContext('2d');
+        const loader = document.getElementById('loader');
+        const tools = document.querySelectorAll('.tool');
+
+        let currentColor = '#FF3B30';
+        let isEraser = false;
+        let showSensors = true;
+        let lastPoint = null;
+        let hoverTarget = null;
+        let hoverStart = 0;
+        const HOVER_TIME = 700; 
+
+        function init() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            uiCanvas.width = window.innerWidth;
+            uiCanvas.height = window.innerHeight;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+        }
+
+        window.addEventListener('resize', init);
+        init();
+
+        function onResults(results) {
+            loader.style.display = 'none';
+            uiCtx.clearRect(0, 0, uiCanvas.width, uiCanvas.height);
+            
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                const indexTip = landmarks[8];
+                const indexPip = landmarks[6];
+                const middleTip = landmarks[12];
+                const middlePip = landmarks[10];
+
+                const videoRatio = video.videoWidth / video.videoHeight;
+                const screenRatio = window.innerWidth / window.innerHeight;
+                
+                let offsetX = 0;
+                let offsetY = 0;
+                let scale = 1;
+
+                if (screenRatio > videoRatio) {
+                    scale = window.innerWidth;
+                    offsetY = (window.innerHeight - (window.innerWidth / videoRatio)) / 2;
+                } else {
+                    scale = window.innerHeight * videoRatio;
+                    offsetX = (window.innerWidth - (window.innerHeight * videoRatio)) / 2;
+                }
+
+                const getCoords = (landmark) => {
+                    const x = (1 - landmark.x) * scale + offsetX;
+                    const y = landmark.y * (scale / videoRatio) + offsetY;
+                    return { x, y };
+                };
+
+                const getDrawCoords = (landmark) => {
+                    const x = landmark.x * scale + offsetX;
+                    const y = landmark.y * (scale / videoRatio) + offsetY;
+                    return { x, y };
+                };
+
+                const fingerPos = getCoords(indexTip);
+                const drawPos = getDrawCoords(indexTip);
+
+                if (showSensors) {
+                    drawConnectors(uiCtx, landmarks, HAND_CONNECTIONS, {
+                        color: 'rgba(0, 255, 255, 0.4)', 
+                        lineWidth: 2,
+                        processLandmark: (l) => getCoords(l)
+                    });
+
+                    landmarks.forEach((pt, i) => {
+                        const pos = getCoords(pt);
+                        uiCtx.fillStyle = (i === 8) ? '#fff' : 'rgba(0, 255, 255, 0.8)';
+                        uiCtx.beginPath();
+                        uiCtx.arc(pos.x, pos.y, 4, 0, Math.PI * 2);
+                        uiCtx.fill();
+                    });
+                }
+
+                uiCtx.strokeStyle = 'white';
+                uiCtx.lineWidth = 2;
+                uiCtx.beginPath();
+                uiCtx.arc(fingerPos.x, fingerPos.y, isEraser ? 25 : 12, 0, Math.PI * 2);
+                uiCtx.stroke();
+                
+                let foundHover = false;
+                tools.forEach((tool) => {
+                    const rect = tool.getBoundingClientRect();
+                    if (fingerPos.x > rect.left && fingerPos.x < rect.right && 
+                        fingerPos.y > rect.top && fingerPos.y < rect.bottom) {
+                        
+                        foundHover = true;
+                        if (hoverTarget !== tool) {
+                            hoverTarget = tool;
+                            hoverStart = Date.now();
+                        }
+
+                        const elapsed = Date.now() - hoverStart;
+                        const progress = Math.min(elapsed / HOVER_TIME, 1);
+                        const circle = tool.querySelector('circle');
+                        if (circle) circle.style.strokeDashoffset = 125.6 - (progress * 125.6);
+
+                        if (elapsed >= HOVER_TIME) {
+                            handleToolSelection(tool);
+                            hoverStart = Date.now(); 
+                        }
+                    } else {
+                        const circle = tool.querySelector('circle');
+                        if (circle) circle.style.strokeDashoffset = 125.6;
+                    }
+                });
+
+                if (!foundHover) {
+                    hoverTarget = null;
+                    const isIndexUp = indexTip.y < indexPip.y;
+                    const isMiddleDown = middleTip.y > middlePip.y;
+
+                    if (isIndexUp && isMiddleDown) {
+                        if (lastPoint) {
+                            ctx.beginPath();
+                            ctx.moveTo(lastPoint.x, lastPoint.y);
+                            ctx.lineTo(drawPos.x, drawPos.y);
+                            
+                            if (isEraser) {
+                                ctx.globalCompositeOperation = 'destination-out';
+                                ctx.lineWidth = 60;
+                            } else {
+                                ctx.globalCompositeOperation = 'source-over';
+                                ctx.strokeStyle = currentColor;
+                                ctx.lineWidth = 12;
+                            }
+                            ctx.stroke();
+                        }
+                        lastPoint = {x: drawPos.x, y: drawPos.y};
+                    } else {
+                        lastPoint = null;
+                    }
+                } else {
+                    lastPoint = null;
+                }
+            }
+        }
+
+        function handleToolSelection(tool) {
+            const type = tool.dataset.type;
+            if (type === 'color') {
+                currentColor = tool.dataset.value;
+                isEraser = false;
+                tools.forEach(t => (t.dataset.type === 'color' || t.dataset.type === 'eraser') && t.classList.remove('active'));
+                tool.classList.add('active');
+            } else if (type === 'eraser') {
+                isEraser = true;
+                tools.forEach(t => (t.dataset.type === 'color' || t.dataset.type === 'eraser') && t.classList.remove('active'));
+                tool.classList.add('active');
+            } else if (type === 'sensor') {
+                showSensors = !showSensors;
+                tool.classList.toggle('bg-blue-500/30', showSensors);
+                tool.classList.toggle('bg-white/10', !showSensors);
+            } else if (type === 'clear') {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+            }
+        }
+
+        const hands = new Hands({
+            locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+        });
+
+        hands.setOptions({
+            maxNumHands: 1,
+            modelComplexity: 1,
+            minDetectionConfidence: 0.75,
+            minTrackingConfidence: 0.75
+        });
+
+        hands.onResults(onResults);
+
+        const camera = new Camera(video, {
+            onFrame: async () => {
+                await hands.send({image: video});
+            },
+            width: 1280,
+            height: 720
+        });
+        camera.start();
+    </script>
+</body>
+</html>
