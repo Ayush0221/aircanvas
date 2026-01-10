@@ -1,53 +1,90 @@
-# _AERO-CANVAS_ [https://aerocanvas.netlify.app/]
+# _AERO-CANVAS_ 
 
+AeroCanvas is an AI-powered Air Canvas application that allows users to draw in the air using hand gestures, inspired by virtual drawing tools and smart-board experiences.
+No mouse. No stylus. Just your fingers and Computer Vision.
 
-An AI-powered Air Canvas that lets users draw in the air using hand gestures captured via a webcam. Built with MediaPipe Hands, HTML5 Canvas, and JavaScript, this project enables real-time finger tracking for drawing, erasing, and color selection—no mouse or touch required.
+🔗 Live Demo: https://aerocanvas.netlify.app/
+
+⸻
+
+🎨 How It Works
+
+AeroCanvas uses real-time hand tracking to detect finger movements through a webcam and converts those gestures into digital strokes on a virtual canvas.
+	•	Raise your index finger to draw
+	•	Change hand positions to switch colors or tools
+	•	Move freely in the air — the canvas follows
 
 ⸻
 
 🚀 Features
-	•	✋ Finger-based Drawing
-	•	Draw using your index finger
-	•	Drawing activates when index finger is up and middle finger is down
-	•	🎨 Multiple Color Palette
-	•	Red, Orange, Yellow, Green, Cyan, Blue, Indigo, Purple, White
-	•	Hover over a color to select (no clicking needed)
-	•	🧽 Eraser Tool
-	•	Erase parts of the drawing using air gestures
-	•	🧼 Clear Canvas
-	•	Instantly clear the entire canvas
-	•	👁️ Hand Skeleton Toggle
-	•	Show or hide MediaPipe hand landmarks and connections
-	•	🪟 Glassmorphism UI
-	•	Modern floating toolbar with hover-based progress selection
-	•	🔄 Real-time Webcam Processing
-	•	Fully immersive mirrored video and canvas alignment
+	•	🖐️ Real-time hand gesture detection
+	•	🎨 Air drawing without physical contact
+	•	🧠 AI-powered finger tracking
+	•	🖌️ Multiple drawing colors
+	•	❌ Eraser functionality
+	•	⚡ Smooth and responsive drawing experience
 
 ⸻
 
 🛠️ Tech Stack
-	•	Frontend: HTML5, CSS (TailwindCSS), JavaScript
-	•	Computer Vision: MediaPipe Hands
-	•	Rendering: HTML Canvas API
-	•	UI Styling: Glassmorphism + TailwindCSS
-	•	Webcam Access: MediaDevices API
+	•	Python – Core logic
+	•	OpenCV – Image processing
+	•	MediaPipe – Hand tracking & landmark detection
+	•	Web Technologies – Frontend integration
+	•	Netlify – Deployment
+
+⸻
+
+🎯 Purpose of the Project
+
+AeroCanvas was built to:
+	•	Explore Computer Vision and gesture recognition
+	•	Understand MediaPipe hand landmarks
+	•	Build real-time AI interaction systems
+	•	Create touchless interfaces for creative use cases
+	•	Learn end-to-end AI project deployment
+
+⸻
+
+📸 Preview
+
+Try the Air Canvas live:
+👉 https://aerocanvas.netlify.app/
+
+📂 Project Structure
+AeroCanvas/
+│
+├── app.py
+├── requirements.txt
+├── static/
+├── templates/
+└── assets/
 
 
+🧠 Learnings
+	•	Real-time webcam input processing
+	•	Hand landmark detection & tracking
+	•	Gesture-based interaction logic
 
 
-  ⚙️ How It Works
-	1.	Webcam Feed
-	•	Captures real-time video using the browser camera
-	•	Video is mirrored for natural interaction
-	2.	Hand Tracking
-	•	MediaPipe detects 21 hand landmarks
-	•	Index finger tip is used for drawing coordinates
-	3.	Gesture Logic
-	•	✅ Index finger up + middle finger down → Draw
-	•	❌ Other gestures → Stop drawing
-	4.	Hover-Based Tool Selection
-	•	Hover your finger over toolbar icons
-	•	Progress ring fills → tool gets selected
-	5.	Canvas Drawing
-	•	Draws smooth strokes on canvas
-	•	Uses compositing for eraser functionality
+⚠️ Disclaimer
+
+This project is inspired by air-canvas and virtual drawing concepts and was created solely for educational purposes.
+No proprietary tools or assets are used.
+
+⸻
+
+👤 Author
+
+Ayush Singh
+	•	LinkedIn: https://www.linkedin.com/in/ayush-singh-52938a28b/
+	•	GitHub: https://github.com/ayush0221
+
+⸻
+
+⭐ Support
+
+If you like this project, please star ⭐ the repository and share feedback — it really helps!
+
+
+	•
