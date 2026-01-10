@@ -1,4 +1,4 @@
-# _AIR-CANVAS_
+# _AERO-CANVAS_
 
 
 An AI-powered Air Canvas that lets users draw in the air using hand gestures captured via a webcam. Built with MediaPipe Hands, HTML5 Canvas, and JavaScript, this project enables real-time finger tracking for drawing, erasing, and color selection—no mouse or touch required.
