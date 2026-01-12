@@ -78,7 +78,7 @@ No proprietary tools or assets are used.
 
 Ayush Singh
 	•	LinkedIn: https://www.linkedin.com/in/ayush-singh-52938a28b/
-	•	GitHub: https://github.com/ayush0221
+	•	GitHub: https://github.com/AyushSingh0221
 
 ⸻
 
